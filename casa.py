@@ -63,26 +63,82 @@ def on_key(event):
         print('you pressed', event.key)
     elif event.key == 'up':
         print('you pressed', event.key)
+        theta_x += 5
     elif event.key == 'down':  
         print('you pressed', event.key)
+        theta_x -= 5
     elif event.key == 'left':     
         print('you pressed', event.key)
+        theta_y += 5
     elif event.key == 'right': 
         print('you pressed', event.key)
-        
+        theta_y -= 5
+
 def on_press(event):
     global scale_object
     if event.button==1: #pressed LEFT button
         print('you pressed left mouse button', event.xdata, event.ydata)
     elif event.button==3: #pressed RIGHT button
         print('you pressed right mouse button', event.xdata, event.ydata)
-            
-def anima(pBack,pFront,pCeil,pFloor,pRoof,pDoor):
 
+def find_house_center(pBack,pFront,pCeil,pFloor,pRoof,pDoor):
+    xs = np.concatenate((pFront[0], pBack[0], pCeil[0], pFloor[0], pRoof[0], pDoor[0]))
+    ys = np.concatenate((pFront[1], pBack[1], pCeil[1], pFloor[1], pRoof[1], pDoor[1]))
+    zs = np.concatenate((pFront[2], pBack[2], pCeil[2], pFloor[2], pRoof[2], pDoor[2]))
+    min_x = np.min(xs)
+    max_x = np.max(xs)
+    min_y = np.min(ys)
+    max_y = np.max(ys)
+    min_z = np.min(zs)
+    max_z = np.max(zs)
+    return np.array([(min_x+max_x)/2, (min_y+max_y)/2, (min_z+max_z)/2])
+
+def translation_matrix(dx,dy,dz):
+    return np.array([[1, 0, 0, dx],
+                     [0, 1, 0, dy],
+                     [0, 0, 1, dz],
+                     [0, 0, 0, 1]])
+
+def rotation_matrix_y(theta):
+    # theta in radians
+    cos = np.cos(theta)
+    sin = np.sin(theta)
+    return np.array([[cos , 0, sin, 0],
+                     [0   , 1, 0  , 0],
+                     [-sin, 0, cos, 0],
+                     [0   , 0, 0  , 1]])
+
+def rotation_matrix_x(theta):
+    # theta in radians
+    cos = np.cos(theta)
+    sin = np.sin(theta)
+    return np.array([[1, 0  , 0   , 0],
+                     [0, cos, -sin, 0],
+                     [0, sin, cos , 0],
+                     [0, 0  , 0   , 1]])
+
+def deg_to_rad(deg):
+    return deg*np.pi/180
+
+def projection_matrix(x, y, z):
+    return np.array([[1, 0, 0, 0],
+                     [0, 1, 0, 0],
+                     [0, 0, 1, 0],
+                     [x, y, z, 1]])
+
+def normalize(face):
+    m, n = face.shape
+    for j in range(n):
+        face[:, j] = face[:, j] / face[m-1, j]
+    return face
+
+def anima(pBack,pFront,pCeil,pFloor,pRoof,pDoor):
     # find house center
+    house_center = find_house_center(pBack,pFront,pCeil,pFloor,pRoof,pDoor)
 
     # transformation to translate center of house to origin
-    
+    Tlc = translation_matrix(-house_center[0],-house_center[1],-house_center[2])
+
     # closes all existing figures
     plt.close('all')    
     fig, ax = plt.subplots()
@@ -92,16 +148,39 @@ def anima(pBack,pFront,pCeil,pFloor,pRoof,pDoor):
     cid = fig.canvas.mpl_connect('button_press_event', on_press)
     
     while not end_loop:
+        # clear axis
+        ax.cla()
+
         # assemble transformation matrixes
-        
+        Rx = rotation_matrix_x(deg_to_rad(theta_x))
+        Ry = rotation_matrix_y(deg_to_rad(theta_y))
+        P = projection_matrix(0, 0, 0.1)
+
+        T = np.dot(Rx, Tlc)
+        T = np.dot(Ry, T)
+        T = np.dot(P , T)
+
         # apply transformations to house points
-        
+        pFront2 = normalize(np.dot(T, pFront))
+        pBack2  = normalize(np.dot(T, pBack))
+        pCeil2  = normalize(np.dot(T, pCeil))
+        pFloor2 = normalize(np.dot(T, pFloor))
+        pRoof2  = normalize(np.dot(T, pRoof))
+        pDoor2  = normalize(np.dot(T, pDoor))
+
         # plot transformed house points
-            
-        
-        plt.show()
+        ax.plot(pFront2[0], pFront2[1], 'r')
+        ax.plot(pBack2[0] , pBack2[1] , 'r')
+        ax.plot(pCeil2[0] , pCeil2[1] , 'r')
+        ax.plot(pFloor2[0], pFloor2[1], 'r')
+        ax.plot(pRoof2[0] , pRoof2[1] , 'r')
+        ax.plot(pDoor2[0] , pDoor2[1] , 'r')
+        ax.set_aspect('equal')
+
+        # plt.show()
+        fig.canvas.draw()
         plt.pause(0.01)
 
 # execute animation
 anima(pBack,pFront,pCeil,pFloor,pRoof,pDoor)
-plt.close('all')    # Closes all existing figures        
+plt.close('all')    # Closes all existing figures
