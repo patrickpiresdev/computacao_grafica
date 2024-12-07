@@ -55,21 +55,27 @@ def on_key(event):
     elif event.key == 'x': 
         print('you pressed', event.key)
         perspective_x += 0.1
+        perspective_x = round(perspective_x, 2)
     elif event.key == 'X': 
         print('you pressed', event.key)
         perspective_x -= 0.1
+        perspective_x = round(perspective_x, 2)
     elif event.key == 'y': 
         print('you pressed', event.key)
         perspective_y += 0.1
+        perspective_y = round(perspective_y, 2)
     elif event.key == 'Y': 
         print('you pressed', event.key)
         perspective_y -= 0.1
+        perspective_y = round(perspective_y, 2)
     elif event.key == 'z': 
         print('you pressed', event.key)
         perspective_z += 0.1
+        perspective_z = round(perspective_z, 2)
     elif event.key == 'Z': 
         print('you pressed', event.key)
         perspective_z -= 0.1
+        perspective_z = round(perspective_z, 2)
     elif event.key == 'up':
         print('you pressed', event.key)
         theta_x += 5
@@ -206,8 +212,8 @@ def anima(pBack,pFront,pCeil,pFloor,pRoof,pDoor):
         ax.set_ylim(-5, 5)
 
         projection_plane_title = f'Projection Plane: {projection_plane}'
-        rotation_title = f'Rotation: X={theta_x} Y={theta_y}'
-        perspective_title = f'Perspective: X={perspective_x} Y={perspective_y} Z={perspective_z}'
+        rotation_title = f'Rotation: X={theta_x}; Y={theta_y}'
+        perspective_title = f'Perspective: X={perspective_x}; Y={perspective_y}; Z={perspective_z}'
 
         ax.set_title(f'{projection_plane_title}\n{rotation_title}\n{perspective_title}', fontsize=14)
 
