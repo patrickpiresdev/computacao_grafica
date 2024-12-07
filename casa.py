@@ -45,22 +45,31 @@ def on_key(event):
         print('you pressed', event.key)
     elif event.key == '1': 
         print('you pressed', event.key)
+        projection_plane = 'XY'
     elif event.key == '2': 
         print('you pressed', event.key)
+        projection_plane = 'ZX'
     elif event.key == '3': 
         print('you pressed', event.key)
+        projection_plane = 'ZY'
     elif event.key == 'x': 
         print('you pressed', event.key)
+        perspective_x += 0.1
     elif event.key == 'X': 
         print('you pressed', event.key)
+        perspective_x -= 0.1
     elif event.key == 'y': 
         print('you pressed', event.key)
+        perspective_y += 0.1
     elif event.key == 'Y': 
         print('you pressed', event.key)
+        perspective_y -= 0.1
     elif event.key == 'z': 
         print('you pressed', event.key)
+        perspective_z += 0.1
     elif event.key == 'Z': 
         print('you pressed', event.key)
+        perspective_z -= 0.1
     elif event.key == 'up':
         print('you pressed', event.key)
         theta_x += 5
@@ -78,8 +87,10 @@ def on_press(event):
     global scale_object
     if event.button==1: #pressed LEFT button
         print('you pressed left mouse button', event.xdata, event.ydata)
+        scale_object -= 0.5
     elif event.button==3: #pressed RIGHT button
         print('you pressed right mouse button', event.xdata, event.ydata)
+        scale_object += 0.5
 
 def find_house_center(pBack,pFront,pCeil,pFloor,pRoof,pDoor):
     xs = np.concatenate((pFront[0], pBack[0], pCeil[0], pFloor[0], pRoof[0], pDoor[0]))
@@ -126,11 +137,23 @@ def projection_matrix(x, y, z):
                      [0, 0, 1, 0],
                      [x, y, z, 1]])
 
+def scale_matrix(s):
+    return np.array([[s, 0, 0, 0],
+                     [0, s, 0, 0],
+                     [0, 0, s, 0],
+                     [0, 0, 0, 1]])
+
 def normalize(face):
     m, n = face.shape
     for j in range(n):
         face[:, j] = face[:, j] / face[m-1, j]
     return face
+
+def get_coordinates_indexes(projection_plane):
+    X_ascii   = ord('X')
+    ax1_ascii = ord(projection_plane[0])
+    ax2_ascii = ord(projection_plane[1])
+    return ax1_ascii - X_ascii, ax2_ascii - X_ascii
 
 def anima(pBack,pFront,pCeil,pFloor,pRoof,pDoor):
     # find house center
@@ -149,14 +172,16 @@ def anima(pBack,pFront,pCeil,pFloor,pRoof,pDoor):
     
     while not end_loop:
         # clear axis
-        ax.cla()
+        ax.clear()
 
         # assemble transformation matrixes
+        S  = scale_matrix(scale_object)
         Rx = rotation_matrix_x(deg_to_rad(theta_x))
         Ry = rotation_matrix_y(deg_to_rad(theta_y))
-        P = projection_matrix(0, 0, 0.1)
+        P = projection_matrix(perspective_x, perspective_y, perspective_z)
 
-        T = np.dot(Rx, Tlc)
+        T = np.dot(S, Tlc)
+        T = np.dot(Rx, T)
         T = np.dot(Ry, T)
         T = np.dot(P , T)
 
@@ -169,15 +194,23 @@ def anima(pBack,pFront,pCeil,pFloor,pRoof,pDoor):
         pDoor2  = normalize(np.dot(T, pDoor))
 
         # plot transformed house points
-        ax.plot(pFront2[0], pFront2[1], 'r')
-        ax.plot(pBack2[0] , pBack2[1] , 'r')
-        ax.plot(pCeil2[0] , pCeil2[1] , 'r')
-        ax.plot(pFloor2[0], pFloor2[1], 'r')
-        ax.plot(pRoof2[0] , pRoof2[1] , 'r')
-        ax.plot(pDoor2[0] , pDoor2[1] , 'r')
-        ax.set_aspect('equal')
+        x1, x2 = get_coordinates_indexes(projection_plane)
+        ax.plot(pFront2[x1], pFront2[x2], 'r')
+        ax.plot(pBack2[x1] , pBack2[x2] , 'r')
+        ax.plot(pCeil2[x1] , pCeil2[x2] , 'r')
+        ax.plot(pFloor2[x1], pFloor2[x2], 'r')
+        ax.plot(pRoof2[x1] , pRoof2[x2] , 'r')
+        ax.plot(pDoor2[x1] , pDoor2[x2] , 'r')
 
-        # plt.show()
+        ax.set_xlim(-5, 5)
+        ax.set_ylim(-5, 5)
+
+        projection_plane_title = f'Projection Plane: {projection_plane}'
+        rotation_title = f'Rotation: X={theta_x} Y={theta_y}'
+        perspective_title = f'Perspective: X={perspective_x} Y={perspective_y} Z={perspective_z}'
+
+        ax.set_title(f'{projection_plane_title}\n{rotation_title}\n{perspective_title}', fontsize=14)
+
         fig.canvas.draw()
         plt.pause(0.01)
 
